@@ -43,186 +43,108 @@ contract PositionManager {
         uint256 entryPrice
     );
 
-    event PositionClosed(
-        uint256 indexed positionId,
-        address indexed trader,
-        int256 pnl
-    );
+    event PositionClosed(uint256 indexed positionId, address indexed trader, int256 pnl);
 
     constructor(address _vault, address _oracle) {
         vault = Vault(_vault);
         oracle = OracleManager(_oracle);
     }
 
+    function openPosition(bytes32 market, PositionType positionType, uint256 collateral, uint256 leverage) external {
+        require(collateral > 0, "Invalid collateral");
+        require(leverage >= 1 && leverage <= 50, "Invalid leverage");
 
-    function openPosition(
-      bytes32 market,
-      PositionType positionType,
-      uint256 collateral,
-      uint256 leverage
-      ) external {
+        uint256 price = oracle.getPrice(market);
 
-      require(collateral > 0, "Invalid collateral");
-      require(leverage >= 1 && leverage <= 50, "Invalid leverage");
+        uint256 size = collateral * leverage;
 
-      uint256 price = oracle.getPrice(market);
+        uint256 liquidationPrice;
 
-      uint256 size = collateral * leverage;
-
-      uint256 liquidationPrice;
-
-      if (positionType == PositionType.LONG) {
-          liquidationPrice =
-              price -
-              ((price * 80) / (leverage * 100));
-      } else {
-          liquidationPrice =
-              price +
-              ((price * 80) / (leverage * 100));
-      }
-
-      positions[nextPositionId] = Position({
-          trader: msg.sender,
-          market: market,
-          positionType: positionType,
-          collateral: collateral,
-          leverage: leverage,
-          size: size,
-          entryPrice: price,
-          liquidationPrice: liquidationPrice,
-          isOpen: true
-      });
-
-      userPositions[msg.sender].push(nextPositionId);
-
-      emit PositionOpened(
-          nextPositionId,
-          msg.sender,
-          market,
-          positionType,
-          collateral,
-          leverage,
-          price
-      );
-
-      nextPositionId++;
-    }
-
-    function getPositionPnl(
-      uint256 positionId
-      ) public view returns (int256) {
-
-      Position memory position = positions[positionId];
-
-      uint256 currentPrice = oracle.getPrice(position.market);
-
-      if (position.positionType == PositionType.LONG) {
-
-          return int256(
-              (position.size *
-                  (currentPrice - position.entryPrice))
-                  / position.entryPrice
-          );
-
-      } else {
-
-          return int256(
-              (position.size *
-                  (position.entryPrice - currentPrice))
-                  / position.entryPrice
-          );
-        }
-    }
-
-    function closePosition(
-      uint256 positionId
-      ) external {
-
-      Position storage position = positions[positionId];
-
-      require(position.isOpen, "Position closed");
-      require(
-          position.trader == msg.sender,
-          "Not position owner"
-      );
-
-      int256 pnl = getPositionPnl(positionId);
-
-      position.isOpen = false;
-
-      uint256 payout;
-
-      if (pnl >= 0) {
-
-          payout =
-              position.collateral +
-              uint256(pnl);
-
-      } else {
-
-          uint256 loss = uint256(-pnl);
-
-          if (loss >= position.collateral) {
-              payout = 0;
-          } else {
-              payout =
-                  position.collateral -
-                  loss;
-          }
-        }
-
-      vault.credit(msg.sender, payout);
-
-      emit PositionClosed(
-          positionId,
-          msg.sender,
-          pnl
-      );
-    }
-
-    function liquidatePosition(
-        uint256 positionId
-        ) external {
-
-        Position storage position =
-            positions[positionId];
-
-        require(position.isOpen, "Closed");
-
-        uint256 currentPrice =
-            oracle.getPrice(position.market);
-
-        bool canLiquidate;
-
-        if (
-            position.positionType ==
-            PositionType.LONG
-        ) {
-
-            canLiquidate =
-                currentPrice <=
-                position.liquidationPrice;
-
+        if (positionType == PositionType.LONG) {
+            liquidationPrice = price - ((price * 80) / (leverage * 100));
         } else {
-
-            canLiquidate =
-                currentPrice >=
-                position.liquidationPrice;
+            liquidationPrice = price + ((price * 80) / (leverage * 100));
         }
 
-        require(
-            canLiquidate,
-            "Not liquidatable"
-        );
+        positions[nextPositionId] = Position({
+            trader: msg.sender,
+            market: market,
+            positionType: positionType,
+            collateral: collateral,
+            leverage: leverage,
+            size: size,
+            entryPrice: price,
+            liquidationPrice: liquidationPrice,
+            isOpen: true
+        });
+
+        userPositions[msg.sender].push(nextPositionId);
+
+        emit PositionOpened(nextPositionId, msg.sender, market, positionType, collateral, leverage, price);
+
+        nextPositionId++;
+    }
+
+    function getPositionPnl(uint256 positionId) public view returns (int256) {
+        Position memory position = positions[positionId];
+
+        uint256 currentPrice = oracle.getPrice(position.market);
+
+        if (position.positionType == PositionType.LONG) {
+            return int256((position.size * (currentPrice - position.entryPrice)) / position.entryPrice);
+        } else {
+            return int256((position.size * (position.entryPrice - currentPrice)) / position.entryPrice);
+        }
+    }
+
+    function closePosition(uint256 positionId) external {
+        Position storage position = positions[positionId];
+
+        require(position.isOpen, "Position closed");
+        require(position.trader == msg.sender, "Not position owner");
+
+        int256 pnl = getPositionPnl(positionId);
 
         position.isOpen = false;
 
-        emit PositionClosed(
-            positionId,
-            position.trader,
-            -int256(position.collateral)
-        );
+        uint256 payout;
+
+        if (pnl >= 0) {
+            payout = position.collateral + uint256(pnl);
+        } else {
+            uint256 loss = uint256(-pnl);
+
+            if (loss >= position.collateral) {
+                payout = 0;
+            } else {
+                payout = position.collateral - loss;
+            }
+        }
+
+        vault.credit(msg.sender, payout);
+
+        emit PositionClosed(positionId, msg.sender, pnl);
     }
 
+    function liquidatePosition(uint256 positionId) external {
+        Position storage position = positions[positionId];
 
+        require(position.isOpen, "Closed");
+
+        uint256 currentPrice = oracle.getPrice(position.market);
+
+        bool canLiquidate;
+
+        if (position.positionType == PositionType.LONG) {
+            canLiquidate = currentPrice <= position.liquidationPrice;
+        } else {
+            canLiquidate = currentPrice >= position.liquidationPrice;
+        }
+
+        require(canLiquidate, "Not liquidatable");
+
+        position.isOpen = false;
+
+        emit PositionClosed(positionId, position.trader, -int256(position.collateral));
+    }
 }

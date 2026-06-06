@@ -27,40 +27,30 @@ contract Vault {
     }
 
     function deposit(uint256 amount) external {
-        require(
-            usdc.transferFrom(msg.sender, address(this), amount),
-            "transfer failed"
-        );
+        require(usdc.transferFrom(msg.sender, address(this), amount), "transfer failed");
 
         balances[msg.sender] += amount;
     }
 
     function withdraw(uint256 amount) external {
-        if (balances[msg.sender] < amount)
+        if (balances[msg.sender] < amount) {
             revert InsufficientBalance();
+        }
 
         balances[msg.sender] -= amount;
 
-        require(
-            usdc.transfer(msg.sender, amount),
-            "withdraw failed"
-        );
+        require(usdc.transfer(msg.sender, amount), "withdraw failed");
     }
 
-    function debit(
-        address trader,
-        uint256 amount
-    ) external onlyEngine {
-        if (balances[trader] < amount)
+    function debit(address trader, uint256 amount) external onlyEngine {
+        if (balances[trader] < amount) {
             revert InsufficientBalance();
+        }
 
         balances[trader] -= amount;
     }
 
-    function credit(
-        address trader,
-        uint256 amount
-    ) external onlyEngine {
+    function credit(address trader, uint256 amount) external onlyEngine {
         balances[trader] += amount;
     }
 }

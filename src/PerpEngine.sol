@@ -34,17 +34,14 @@ contract PerpEngine {
         oracle = OracleManager(_oracle);
     }
 
-    function openPosition(
-        bytes32 pair,
-        uint256 collateral,
-        uint256 leverage,
-        Side side
-    ) external {
-        if (positions[msg.sender].open)
+    function openPosition(bytes32 pair, uint256 collateral, uint256 leverage, Side side) external {
+        if (positions[msg.sender].open) {
             revert PositionExists();
+        }
 
-        if (leverage < 1 || leverage > 20)
+        if (leverage < 1 || leverage > 20) {
             revert InvalidLeverage();
+        }
 
         uint256 price = oracle.getPrice(pair);
 
@@ -71,42 +68,25 @@ contract PerpEngine {
         int256 pnl = calculatePnL(pos, currentPrice);
 
         if (pnl > 0) {
-            vault.credit(
-                msg.sender,
-                pos.collateral + uint256(pnl)
-            );
+            vault.credit(msg.sender, pos.collateral + uint256(pnl));
         } else {
             uint256 loss = uint256(-pnl);
 
             if (loss >= pos.collateral) {
                 vault.credit(msg.sender, 0);
             } else {
-                vault.credit(
-                    msg.sender,
-                    pos.collateral - loss
-                );
+                vault.credit(msg.sender, pos.collateral - loss);
             }
         }
 
         delete positions[msg.sender];
     }
 
-    function calculatePnL(
-        Position memory pos,
-        uint256 currentPrice
-    ) public pure returns (int256) {
+    function calculatePnL(Position memory pos, uint256 currentPrice) public pure returns (int256) {
         if (pos.side == Side.LONG) {
-            return int256(
-                (pos.size *
-                    (currentPrice - pos.entryPrice)) /
-                    pos.entryPrice
-            );
+            return int256((pos.size * (currentPrice - pos.entryPrice)) / pos.entryPrice);
         } else {
-            return int256(
-                (pos.size *
-                    (pos.entryPrice - currentPrice)) /
-                    pos.entryPrice
-            );
+            return int256((pos.size * (pos.entryPrice - currentPrice)) / pos.entryPrice);
         }
     }
 }
