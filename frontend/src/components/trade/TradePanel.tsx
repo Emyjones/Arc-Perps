@@ -1,13 +1,35 @@
 "use client";
 
 import { useState } from "react";
+import { useSelectedMarket } from "@/providers/MarketProvider";
+import { useMarketPrices } from "@/hooks/useMarketPrices";
+import { useTradeStore } from "@/lib/store";
 
 export default function TradePanel() {
   const [side, setSide] = useState<"long" | "short">("long");
   const [collateral, setCollateral] = useState("100");
   const [leverage, setLeverage] = useState(5);
 
+  const { selectedMarket } = useSelectedMarket();
+  const { markets } = useMarketPrices();
+  const addPosition = useTradeStore((state) => state.addPosition);
+
+  const market = markets.find((item) => item.symbol === selectedMarket);
   const size = Number(collateral || 0) * leverage;
+
+  function handleOpenPosition() {
+    if (!market || Number(collateral) <= 0) return;
+
+    addPosition({
+      id: crypto.randomUUID(),
+      market: selectedMarket,
+      side: side.toUpperCase() as "LONG" | "SHORT",
+      collateral: Number(collateral),
+      leverage,
+      size,
+      entryPrice: market.price,
+    });
+  }
 
   return (
     <aside className="rounded-xl border border-zinc-900 bg-zinc-950 p-5 text-white">
@@ -19,7 +41,7 @@ export default function TradePanel() {
           className={`rounded-lg py-3 font-bold ${
             side === "long"
               ? "bg-green-500 text-black"
-              : "bg-black text-zinc-400 border border-zinc-800"
+              : "border border-zinc-800 bg-black text-zinc-400"
           }`}
         >
           Long
@@ -30,7 +52,7 @@ export default function TradePanel() {
           className={`rounded-lg py-3 font-bold ${
             side === "short"
               ? "bg-red-500 text-black"
-              : "bg-black text-zinc-400 border border-zinc-800"
+              : "border border-zinc-800 bg-black text-zinc-400"
           }`}
         >
           Short
@@ -65,6 +87,11 @@ export default function TradePanel() {
         </div>
 
         <div className="mt-2 flex justify-between">
+          <span>Entry Price</span>
+          <span>{market ? `$${market.price.toLocaleString()}` : "--"}</span>
+        </div>
+
+        <div className="mt-2 flex justify-between">
           <span>Side</span>
           <span className={side === "long" ? "text-green-400" : "text-red-400"}>
             {side.toUpperCase()}
@@ -72,7 +99,10 @@ export default function TradePanel() {
         </div>
       </div>
 
-      <button className="mt-4 w-full rounded-lg bg-white py-3 font-bold text-black">
+      <button
+        onClick={handleOpenPosition}
+        className="mt-4 w-full rounded-lg bg-white py-3 font-bold text-black"
+      >
         Open Position
       </button>
     </aside>

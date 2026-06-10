@@ -3,35 +3,17 @@ export type ChartPoint = {
   price: number;
 };
 
-const COINGECKO_IDS: Record<string, string> = {
-  "BTC-USD": "bitcoin",
-  "ETH-USD": "ethereum",
-  "SOL-USD": "solana",
-};
-
-export async function getMarketChart(
-  marketSymbol: string
-): Promise<ChartPoint[]> {
-  const coinId = COINGECKO_IDS[marketSymbol] ?? "bitcoin";
-
+export async function getMarketChart(marketSymbol: string): Promise<ChartPoint[]> {
   try {
-    const res = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=1`,
-      {
-        cache: "no-store",
-      }
-    );
+    const res = await fetch(`/api/chart?market=${marketSymbol}`, {
+      cache: "no-store",
+    });
 
-    if (!res.ok) {
-      console.warn("Chart request failed:", res.status);
-      return [];
-    }
+    if (!res.ok) return [];
 
     const data = await res.json();
 
-    if (!Array.isArray(data.prices)) {
-      return [];
-    }
+    if (!Array.isArray(data.prices)) return [];
 
     return data.prices.map(([timestamp, price]: [number, number]) => ({
       time: new Date(timestamp).toLocaleTimeString([], {
@@ -40,8 +22,7 @@ export async function getMarketChart(
       }),
       price: Number(price.toFixed(2)),
     }));
-  } catch (error) {
-    console.warn("Failed to fetch chart:", error);
+  } catch {
     return [];
   }
 }
