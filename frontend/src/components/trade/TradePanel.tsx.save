@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount } from "wagmi";
 import { useSelectedMarket } from "@/providers/MarketProvider";
 import { useMarketData } from "@/providers/MarketDataProvider";
 import { useTradeStore } from "@/lib/store";
@@ -12,16 +11,14 @@ export default function TradePanel() {
   const [leverage, setLeverage] = useState(5);
 
   const { selectedMarket } = useSelectedMarket();
-  const { markets } = useMarketData();
-  const { isConnected } = useAccount();
+  const { markets } = useMarketPrices();
   const addPosition = useTradeStore((state) => state.addPosition);
 
   const market = markets.find((item) => item.symbol === selectedMarket);
   const size = Number(collateral || 0) * leverage;
-  const canOpenPosition = isConnected && Boolean(market) && Number(collateral) > 0;
 
   function handleOpenPosition() {
-    if (!canOpenPosition || !market) return;
+    if (!market || Number(collateral) <= 0) return;
 
     addPosition({
       id: crypto.randomUUID(),
@@ -105,10 +102,9 @@ export default function TradePanel() {
 
       <button
         onClick={handleOpenPosition}
-        disabled={!canOpenPosition}
-        className="mt-4 w-full rounded-lg bg-white py-3 font-bold text-black transition disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+        className="mt-4 w-full rounded-lg bg-white py-3 font-bold text-black"
       >
-        {isConnected ? "Open Position" : "Connect wallet to trade"}
+        Open Position
       </button>
     </aside>
   );

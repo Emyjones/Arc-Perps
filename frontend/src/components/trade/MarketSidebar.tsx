@@ -1,10 +1,10 @@
 "use client";
 
-import { useMarketPrices } from "@/hooks/useMarketPrices";
+import { useMarketData } from "@/providers/MarketDataProvider";
 import { useSelectedMarket } from "@/providers/MarketProvider";
 
 export default function MarketSidebar() {
-  const { markets, loading } = useMarketPrices();
+  const { markets, loading } = useMarketData();
   const { selectedMarket, setSelectedMarket } = useSelectedMarket();
 
   return (

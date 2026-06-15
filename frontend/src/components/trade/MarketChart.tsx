@@ -9,13 +9,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useMarketPrices } from "@/hooks/useMarketPrices";
+import { useMarketData } from "@/providers/MarketDataProvider";
 import { useSelectedMarket } from "@/providers/MarketProvider";
 import { getMarketChart, type ChartPoint } from "@/services/chart";
 
 export default function MarketChart() {
   const { selectedMarket } = useSelectedMarket();
-  const { markets, loading } = useMarketPrices();
+  const { markets, loading } = useMarketData();
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
 
   const market = markets.find((item) => item.symbol === selectedMarket);
