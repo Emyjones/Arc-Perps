@@ -4,6 +4,11 @@ export type MarketFundamentals = {
   totalMarketCapUsd: number;
   totalVolumeUsd: number;
   marketCapChange24h: number;
+  btcDominance: number;
+  ethDominance: number;
+  sentimentValue: number;
+  sentimentLabel: string;
+  regime: string;
 };
 
 export type IntelNewsItem = {
@@ -27,6 +32,11 @@ const EMPTY_INTEL: IntelSnapshot = {
     totalMarketCapUsd: 0,
     totalVolumeUsd: 0,
     marketCapChange24h: 0,
+    btcDominance: 0,
+    ethDominance: 0,
+    sentimentValue: 0,
+    sentimentLabel: "Unavailable",
+    regime: "Unknown",
   },
   news: [],
 };
@@ -48,6 +58,13 @@ export async function getIntelSnapshot(): Promise<IntelSnapshot> {
         totalMarketCapUsd: Number(data.fundamentals?.totalMarketCapUsd ?? 0),
         totalVolumeUsd: Number(data.fundamentals?.totalVolumeUsd ?? 0),
         marketCapChange24h: Number(data.fundamentals?.marketCapChange24h ?? 0),
+        btcDominance: Number(data.fundamentals?.btcDominance ?? 0),
+        ethDominance: Number(data.fundamentals?.ethDominance ?? 0),
+        sentimentValue: Number(data.fundamentals?.sentimentValue ?? 0),
+        sentimentLabel: String(
+          data.fundamentals?.sentimentLabel ?? "Unavailable"
+        ),
+        regime: String(data.fundamentals?.regime ?? "Unknown"),
       },
       news: Array.isArray(data.news) ? data.news : [],
     };
