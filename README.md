@@ -64,6 +64,26 @@ Deploy contracts to Arc testnet:
 forge script script/Deploy.s.sol:Deploy --rpc-url arc --broadcast
 ```
 
+## Vercel Deployment
+
+This repo includes a root `vercel.json` that deploys the Next.js app from `frontend`.
+
+Recommended Vercel settings:
+
+- Framework preset: Next.js
+- Root directory: repository root
+- Install command: `cd frontend && npm install`
+- Build command: `cd frontend && npm run build`
+- Output directory: `frontend/.next`
+
+Environment variables:
+
+```bash
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
+```
+
+The app can also deploy with the checked-in development fallback project id, but a dedicated WalletConnect project id is recommended for production and demos.
+
 ## Data Sources
 
 All browser-facing market data is routed through Next.js API routes:
